@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilha de Férias - Visualização Dinâmica</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .filters {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 3px solid #667eea;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 0.95em;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .stats {
+            padding: 20px 30px;
+            background: #e8f4f8;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .stat-item .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-item .label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 15px 10px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.3s;
+        }
+
+        th:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+        }
+
+        th.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        th.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: all 0.3s;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        td {
+            padding: 12px 10px;
+            color: #333;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-carreira {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-temporario {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-habilitacao {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px;
+            color: #999;
+            font-size: 1.2em;
+        }
+
+        .btn-reset {
+            padding: 12px 30px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-reset:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.8em;
+            }
+
+            th, td {
+                padding: 8px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Planilha de Férias</h1>
+            <p>Sistema de Controle e Visualização de Férias Militares</p>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="filterNome">🔍 Nome:</label>
+                <input type="text" id="filterNome" placeholder="Buscar por nome...">
+            </div>
+            <div class="filter-group">
+                <label for="filterPromo">🎖️ Promoção/NR:</label>
+                <input type="text" id="filterPromo" placeholder="Ex: 2, CAP...">
+            </div>
+            <div class="filter-group">
+                <label for="filterCarreira">👤 Carreira:</label>
+                <select id="filterCarreira">
+                    <option value="">Todos</option>
+                    <option value="CARREIRA">Carreira</option>
+                    <option value="TEMPORÁRIO">Temporário</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterSecao">📍 Seção:</label>
+                <input type="text" id="filterSecao" placeholder="Ex: GARAGEM, PEL COM...">
+            </div>
+            <div class="filter-group">
+                <label for="filterPeriodo">📅 Período Aquisitivo:</label>
+                <select id="filterPeriodo">
+                    <option value="">Todos</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterMes">🗓️ Mês de Início:</label>
+                <select id="filterMes">
+                    <option value="">Todos</option>
+                    <option value="01">Janeiro</option>
+                    <option value="02">Fevereiro</option>
+                    <option value="03">Março</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Maio</option>
+                    <option value="06">Junho</option>
+                    <option value="07">Julho</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+            </div>
+            <div class="filter-group" style="display: flex; align-items: flex-end;">
+                <button class="btn-reset" onclick="resetFilters()">🔄 Limpar Filtros</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div class="number" id="totalRegistros">0</div>
+                <div class="label">Total de Registros</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="totalCarreira">0</div>
+                <div class="label">Carreira</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="totalTemporario">0</div>
+                <div class="label">Temporários</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="totalVisiveis">0</div>
+                <div class="label">Exibidos</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="tabelaFerias">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="0">PROMO/NR</th>
+                        <th class="sortable" data-column="1">P/G</th>
+                        <th class="sortable" data-column="2">NOME GUERRA</th>
+                        <th class="sortable" data-column="3">CARREIRA</th>
+                        <th class="sortable" data-column="4">ESCALA SV</th>
+                        <th class="sortable" data-column="5">SEÇÃO</th>
+                        <th class="sortable" data-column="6">SUBSTITUTO</th>
+                        <th class="sortable" data-column="7">HABILITAÇÃO</th>
+                        <th class="sortable" data-column="8">PERÍODO AQUISITIVO</th>
+                        <th class="sortable" data-column="9">INÍCIO</th>
+                        <th class="sortable" data-column="10">TÉRMINO</th>
+                        <th class="sortable" data-column="11">APRES.</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaBody">
+                </tbody>
+            </table>
+            <div id="noResults" class="no-results" style="display: none;">
+                😕 Nenhum registro encontrado com os filtros aplicados.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dados = [
+            ["2", "CAP", "CAP VILAS BOAS", "CARREIRA", "", "SCMT", "", "", "2025", "10/11/2025", "19/11/2025", "20/11/2025"],
+            ["13", "1º SGT", "1º SGT LEANDRO", "CARREIRA", "", "GARAGEM", "3º SGT BARRETO", "", "2024", "10/11/2025", "24/11/2025", "25/11/2025"],
+            ["44", "3º SGT", "3º SGT FURTADO", "CARREIRA", "", "PEL COM", "", "", "2024", "12/11/2025", "21/11/2025", "22/11/2025"],
+            ["7", "2º TEN", "2º TEN NETO", "TEMPORÁRIO", "", "SEÇÃO DE SAÚDE", "", "", "2024", "14/11/2025", "28/11/2025", "29/11/2025"],
+            ["201", "SD EP", "SD EP GESSOLI", "TEMPORÁRIO", "", "PMGU", "-", "", "2025", "01/12/2025", "30/12/2025", "31/12/2025"],
+            ["1", "CAP", "CAP VISCOVINI", "CARREIRA", "", "CMT", "CAP VILAS BOAS", "", "2024", "02/12/2025", "16/12/2025", "17/12/2025"],
+            ["2", "CAP", "CAP VILAS BOAS", "CARREIRA", "", "SCMT", "", "", "2025", "02/12/2025", "21/12/2025", "22/12/2025"],
+            ["3", "1º TEN", "1º TEN FONSECA LIZ", "CARREIRA", "", "3ª SEÇÃO", "", "", "2024", "02/12/2025", "21/12/2025", "22/12/2025"],
+            ["212", "SD EP MOT", "SD EP KAUÊ SILVA", "TEMPORÁRIO", "", "RESERVA DE ARMAMENTO", "CB GILIO", "B", "2025", "03/12/2025", "17/12/2025", "18/12/2025"],
+            ["20", "2º SGT", "2º SGT RAFAEL VIEIRA", "CARREIRA", "", "PEL C2", "", "", "2024", "10/12/2025", "19/12/2025", "20/12/2025"],
+            ["7", "2º TEN", "2º TEN NETO", "TEMPORÁRIO", "", "SEÇÃO DE SAÚDE", "", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["18", "2º SGT", "2º SGT DINIZ", "CARREIRA", "", "3ª SEÇÃO", "TEN MALTA", "", "2024", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["22", "2º SGT", "2º SGT ERIVELTON", "CARREIRA", "", "SALC/11ª BDA INF MEC", "", "", "2024", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["25", "3º SGT", "3º SGT FÁBIO BARBOSA", "CARREIRA", "", "SVP", "CAP FREIRE", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["35", "3º SGT", "3º SGT MILATO", "TEMPORÁRIO", "", "SEÇÃO DE SAÚDE", "CB ALMEIDA", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["40", "3º SGT", "3º SGT ANDRE", "TEMPORÁRIO", "", "PEL COM", "", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["41", "3º SGT", "3º SGT HAKME", "CARREIRA", "", "3ª SEÇÃO", "", "", "2024", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["43", "3º SGT", "3º SGT DIONÍSIO", "CARREIRA", "", "INFORMÁTICA", "3º SGT SARAGOSSA", "", "2024", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["52", "3º SGT", "3º SGT ASSUNÇÃO", "TEMPORÁRIO", "", "PEL COM", "", "D", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["104", "CB MOT", "CB GABRIEL VITOR", "TEMPORÁRIO", "", "PMGU", "-", "D", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["105", "CB MOT", "CB REIS", "TEMPORÁRIO", "", "4ª SEÇÃO", "SD EP AMARAL", "B", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["107", "CB MOT", "CB CAVALCANTE", "TEMPORÁRIO", "", "1ª SEÇÃO", "SD EP MOREIRA", "B", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["108", "CB", "CB RODRIGUES", "TEMPORÁRIO", "", "3ª SEÇÃO", "SD EP VITOR PEREIRA", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["110", "CB", "CB JOÃO VITOR", "TEMPORÁRIO", "", "MANUTENÇÃO DE COM", "3º SGT CARVALHO/SD EP CARDOSO", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["113", "CB", "CB KAYLLON", "TEMPORÁRIO", "", "GARAGEM", "SD EP ANSELMO/SD EP VASCONCELOS", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["205", "SD EP", "SD EP MARINHO", "TEMPORÁRIO", "", "APROVISIONAMENTO", "-", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["206", "SD EP MOT", "SD EP CUNHA", "TEMPORÁRIO", "", "ORDENANÇA", "-", "B", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["208", "SD EP", "SD EP LUCAS", "TEMPORÁRIO", "", "APROVISIONAMENTO", "SD EP LUCAS SILVA", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["209", "SD EP*", "SD EP MOREIRA", "TEMPORÁRIO", "", "1ª SEÇÃO", "CB CAVALCANTE", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["210", "SD EP", "SD EP MIKAEL", "TEMPORÁRIO", "", "APROVISIONAMENTO", "-", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["216", "SD EP", "SD EP CHRISTOFFER", "TEMPORÁRIO", "", "RESERVA DE MATERIAL", "-", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["217", "SD EP", "SD EP LUCAS SILVA", "TEMPORÁRIO", "", "RESERVA DE MATERIAL", "-", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["218", "SD EP*", "SD EP ALMEIDA", "TEMPORÁRIO", "", "SEÇÃO DE SAÚDE", "3º SGT MILATO", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["220", "SD EP MOT", "SD EP KLEBER", "TEMPORÁRIO", "", "PELOTÃO DE OBRAS", "CB KAYKI", "B", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["222", "SD EP", "SD EP ANSELMO", "TEMPORÁRIO", "", "GARAGEM", "SD EP VASCONCELOS", "", "2025", "15/12/2025", "13/01/2026", "14/01/2026"],
+            ["6", "2º TEN", "2º TEN MASTROPAOLO", "TEMPORÁRIO", "", "1ª SEÇÃO", "", "", "2025", "22/12/2025", "05/01/2026", "06/01/2026"],
+            ["19", "2º SGT", "2º SGT VINICIUS LIMA", "CARREIRA", "", "INFORMÁTICA", "3º SGT SARAGOSSA", "", "2025", "22/12/2025", "05/01/2026", "06/01/2026"],
+            ["21", "2º SGT", "2º SGT ARTIOLI", "CARREIRA", "", "TRANSFERIDO", "1º SGT SOUZA", "", "2024", "22/12/2025", "05/01/2026", "06/01/2026"],
+            ["31", "3º SGT", "3º SGT GONZALEZ", "CARREIRA", "", "SPP", "3º SGT BANHARA", "", "2024", "22/12/2025", "31/12/2025", "01/01/2026"],
+            ["39", "3º SGT", "3º SGT NASCIMENTO", "CARREIRA", "", "1ª SEÇÃO", "1º SGT SALVADOR", "", "2024", "22/12/2025", "05/01/2026", "06/01/2026"],
+            ["4", "1º TEN", "1º TEN DOS SANTOS", "CARREIRA", "", "4ª SEÇÃO", "ST ALBUQUERQUE", "", "2024", "29/12/2025", "27/01/2026", "28/01/2026"],
+            ["38", "3º SGT", "3º SGT GARUZI", "CARREIRA", "", "PEL C2", "", "", "2024", "29/12/2025", "27/01/2026", "28/01/2026"],
+            ["16", "1º SGT", "1º SGT SALVADOR", "CARREIRA", "", "1ª SEÇÃO", "3º SGT VERAS", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["30", "3º SGT", "3º SGT COUTO", "CARREIRA", "", "4ª SEÇÃO", "3º SGT ARTUR", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["39", "3º SGT", "3º SGT BANHARA", "TEMPORÁRIO", "", "SPP", "3º SGT GONZALEZ", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["49", "3º SGT", "3º SGT NERI", "TEMPORÁRIO", "", "PEL COM", "", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["53", "3º SGT", "3º SGT RAPHAEL", "TEMPORÁRIO", "", "PEL C2", "", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["111", "CB", "CB GÍLIO", "TEMPORÁRIO", "", "RESERVA DE ARMAMENTO", "SD EP KAUÊ SILVA", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["202", "SD EP", "ROCHA", "TEMPORÁRIO", "", "PMGU", "", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["207", "SD EP*", "SD EP JOÃO FELIPE", "TEMPORÁRIO", "", "APROVISIONAMENTO", "-", "", "2025", "05/01/2026", "03/02/2026", "04/02/2026"],
+            ["5", "2º TEN", "2º TEN MALTA", "TEMPORÁRIO", "", "3ª SEÇÃO", "", "", "2025", "19/01/2026", "28/01/2026", "29/01/2026"],
+            ["28", "3º SGT", "3º SGT BITTENCOURT", "CARREIRA", "", "SECRETARIA", "3º SGT RIELLA", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["29", "3º SGT", "3º SGT NASCIMENTO", "CARREIRA", "", "1ª SEÇÃO", "1º SGT SALVADOR/3º SGT VERAS", "", "2025", "19/01/2026", "02/02/2026", "03/02/2026"],
+            ["32", "3º SGT", "3º SGT PEREIRA", "TEMPORÁRIO", "", "PELOTÃO DE OBRAS", "CB KAYKI", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["36", "3º SGT", "3º SGT CARVALHO", "TEMPORÁRIO", "", "MANUTENÇÃO DE COM", "CB JOÃO VITOR/SD EP CARDOSO", "D", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["42", "3º SGT", "3º SGT EDER", "TEMPORÁRIO", "", "3ª SEÇÃO", "3º SGT DINIZ", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["43", "3º SGT", "3º SGT SARAGOSSA", "TEMPORÁRIO", "", "INFORMÁTICA", "2º SGT VINICIUS LIMA", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["48", "3º SGT", "3º SGT PINHEIRO", "TEMPORÁRIO", "", "PEL C2", "", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["50", "3º SGT", "3º SGT ESPERANÇA", "TEMPORÁRIO", "", "GARAGEM", "1º SGT LEANDRO/3º SGT BARRETO", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["51", "3º SGT", "3º SGT BENTO", "TEMPORÁRIO", "", "APROVISIONAMENTO", "1º TEN ROSA", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["101", "CB", "ALVES", "TEMPORÁRIO", "", "PMGU", "", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["102", "CB MOT", "CB GOMES", "TEMPORÁRIO", "", "APROVISIONAMENTO", "SD EP MARINHO", "B", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["103", "CB", "CB BALESTRINI", "TEMPORÁRIO", "", "SPP", "3º SGT GONZALEZ/SD EV CALDEIRA", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["106", "CB MOT", "CB OSVALDO", "TEMPORÁRIO", "", "APROVISIONAMENTO", "SD EP JOÃO FELIPE", "B", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["109", "CB MOT", "CB JÚLIO CÉSAR", "TEMPORÁRIO", "", "SEÇÃO DE SAÚDE", "-", "B", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["112", "CB MOT", "CB KAYKI", "TEMPORÁRIO", "", "PELOTÃO DE OBRAS", "-", "B", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["203", "SD EP", "SD EP MATHEUS GABRIEL", "TEMPORÁRIO", "", "APROVISIONAMENTO", "SD EP MIKAEL", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["211", "SD EP", "SD EP JOÃO", "TEMPORÁRIO", "", "SECRETARIA", "3º SGT BITTENCOURT/SD EV VIEIRA", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["213", "SD EP", "SD EP VICTOR PEREIRA", "TEMPORÁRIO", "", "3ª SEÇÃO", "CB RODRIGUES", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["214", "SD EP*", "SD EP RAMOS", "TEMPORÁRIO", "", "PEL C2", "", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["215", "SD EP", "SD EP CARDOSO", "TEMPORÁRIO", "", "MANUTENÇÃO DE COM", "CB JOÃO VITOR/ 3º SGT CARVALHO", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["219", "SD EP*", "SD EP PIMENTA", "TEMPORÁRIO", "", "PEL COM", "", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["221", "SD EP MOT", "SD EP AMARAL", "TEMPORÁRIO", "", "4ª SEÇÃO", "CB REIS", "B", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["223", "SD EP MOT*", "SD EP VASCONCELOS", "TEMPORÁRIO", "", "GARAGEM", "-", "B", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["224", "SD EP", "SD EP PASSIBERG", "TEMPORÁRIO", "", "COMUNICAÇÃO SOCIAL", "3º SGT RIELLA", "", "2025", "19/01/2026", "17/02/2026", "18/02/2026"],
+            ["212", "SD EP MOT", "SD EP KAUÊ SILVA", "TEMPORÁRIO", "", "RESERVA DE ARMAMENTO", "CB GILIO", "B", "2025", "04/02/2026", "18/02/2026", "19/02/2026"],
+            ["23", "3º SGT", "3º SGT GONZALEZ", "CARREIRA", "", "SPP", "3 º SGT BANHARA", "", "2025", "09/02/2026", "23/02/2026", "24/02/2026"],
+            ["5", "2º TEN", "2º TEN MALTA", "TEMPORÁRIO", "", "3ª SEÇÃO", "", "", "2025", "11/02/2026", "20/02/2026", "21/02/2026"],
+            ["45", "3º SGT", "3º SGT DANIEL FERREIRA", "CARREIRA", "", "PEL C2", "", "", "2025", "19/02/2026", "28/02/2026", "01/03/2026"],
+            ["8", "2º TEN", "2º TEN LADISLAU", "CARREIRA", "", "PEL C2", "", "", "2025", "11/03/2026", "20/03/2026", "21/03/2026"],
+            ["20", "2º SGT", "2º SGT RAFAEL VIEIRA", "CARREIRA", "", "PEL C2", "", "", "2025", "11/03/2026", "20/03/2026", "21/03/2026"],
+            ["23", "3º SGT", "3º SGT GONZALEZ", "CARREIRA", "", "SPP", "3 º SGT BANHARA", "", "2025", "16/03/2026", "30/03/2026", "31/03/2026"],
+            ["46", "3º SGT", "3º SGT PEDRO CARVALHO", "CARREIRA", "", "PEL C2", "", "", "2025", "20/03/2026", "29/03/2026", "30/03/2026"],
+            ["47", "3º SGT", "3º SGT BARRETO", "CARREIRA", "", "GARAGEM", "3º SGT ESPERANÇA", "", "2025", "27/03/2026", "05/04/2026", "06/04/2026"],
+            ["6", "2º TEN", "2º TEN MASTROPAOLO", "TEMPORÁRIO", "", "1ª SEÇÃO", "", "", "2025", "06/04/2026", "20/04/2026", "21/04/2026"],
+            ["24", "3º SGT", "3º SGT RIELLA", "CARREIRA", "", "COMUNICAÇÃO SOCIAL", "S TEN CARLOS GOMES", "", "2025", "06/04/2026", "20/04/2026", "21/04/2026"],
+            ["5", "2º TEN", "2º TEN MALTA", "TEMPORÁRIO", "", "3ª SEÇÃO", "", "", "2025", "04/05/2026", "13/05/2026", "14/05/2026"],
+            ["9", "2º TEN", "2º TEN ENRIQUE BRITO", "CARREIRA", "", "PEL COM", "", "", "2025", "15/05/2026", "29/05/2026", "30/05/2026"],
+            ["11", "S TEN", "S TEN ALBUQUERQUE", "CARREIRA", "", "TRANSFERIDO", "3º SGT COUTO", "", "2025", "01/06/2026", "30/06/2026", "01/07/2026"],
+            ["45", "3º SGT", "3º SGT DANIEL FERREIRA", "CARREIRA", "", "PEL C2", "", "", "2025", "08/06/2026", "17/06/2026", "18/06/2026"],
+            ["8", "2º TEN", "2º TEN LADISLAU", "CARREIRA", "", "PEL C2", "", "", "2025", "03/07/2026", "12/07/2026", "13/07/2026"],
+            ["13", "1º SGT", "1º SGT LEANDRO", "CARREIRA", "", "GARAGEM", "3º SGT BARRETO/3º SGT ESPERANÇA", "", "2025", "06/07/2026", "20/07/2026", "21/07/2026"],
+            ["18", "2º SGT", "2º SGT DINIZ", "CARREIRA", "", "3ª SEÇÃO", "3º SGT EDER", "", "2025", "06/07/2026", "04/08/2026", "05/08/2026"],
+            ["37", "3º SGT", "3º SGT ITALO SILVA", "CARREIRA", "", "AQUISIÇÕES", "1º SGT CAMBRAIA", "", "2025", "06/07/2026", "04/08/2026", "05/08/2026"],
+            ["38", "3º SGT", "3º SGT GARUZI", "CARREIRA", "", "PEL C2", "", "", "2025", "06/07/2026", "20/07/2026", "21/07/2026"],
+            ["20", "2º SGT", "2º SGT RAFAEL VIEIRA", "CARREIRA", "", "PEL C2", "", "", "2025", "08/07/2026", "17/07/2026", "18/07/2026"],
+            ["46", "3º SGT", "3º SGT PEDRO CARVALHO", "CARREIRA", "", "PEL C2", "", "", "2025", "14/07/2026", "23/07/2026", "24/07/2026"],
+            ["47", "3º SGT", "3º SGT BARRETO", "CARREIRA", "", "GARAGEM", "3º SGT ESPERANÇA", "", "2025", "24/07/2026", "02/08/2026", "03/08/2026"],
+            ["15", "1º SGT", "1º SGT CAMBRAIA", "CARREIRA", "", "AQUISIÇÕES", "3º SGT ÍTALO SILVA", "", "2025", "03/08/2026", "01/09/2026", "02/09/2026"],
+            ["17", "1º SGT", "1º SGT MIYASHIRO", "CARREIRA", "", "RESERVA DE MATERIAL", "3º SGT CARVALHO", "", "2025", "03/08/2026", "01/09/2026", "02/09/2026"],
+            ["13", "1º SGT", "1º SGT LEANDRO", "CARREIRA", "", "GARAGEM", "3º SGT BARRETO/3º SGT ESPERANÇA", "", "2025", "31/08/2026", "14/09/2026", "15/09/2026"],
+            ["14", "1º SGT", "1º SGT FERREIRA", "CARREIRA", "", "1ª SEÇÃO", "1º SGT CAMBRAIA", "", "2025", "31/08/2026", "29/09/2026", "30/09/2026"],
+            ["26", "3º SGT", "3º SGT VERAS", "CARREIRA", "", "1ª SEÇÃO", "3º SGT NASCIMENTO/1º SGT SALVADOR", "", "2025", "31/08/2026", "29/09/2026", "30/09/2026"],
+            ["44", "3º SGT", "3º SGT FURTADO", "CARREIRA", "", "PEL COM", "", "", "2025", "31/08/2026", "29/09/2026", "30/09/2026"],
+            ["21", "2º SGT", "ARTIOLI", "CARREIRA", "", "TRANSFERIDO", "", "", "2025", "14/09/2026", "28/09/2026", "29/09/2026"],
+            ["21", "2º SGT", "ARTIOLI", "CARREIRA", "", "TRANSFERIDO", "1º SGT SOUZA", "", "2025", "14/09/2026", "28/09/2026", "29/09/2026"],
+            ["24", "3º SGT", "3º SGT RIELLA", "CARREIRA", "", "COMUNICAÇÃO SOCIAL", "S TEN CARLOS GOMES", "", "2025", "05/10/2026", "19/10/2026", "20/10/2026"],
+            ["9", "2º TEN", "2º TEN ENRIQUE BRITO", "CARREIRA", "", "PEL COM", "", "", "2025", "09/10/2026", "23/10/2026", "24/10/2026"],
+            ["12", "1º SGT", "1º SGT SOUZA", "CARREIRA", "", "2ª SEÇÃO", "3º SGT LARA", "", "2025", "15/10/2026", "13/11/2026", "14/11/2026"],
+            ["34", "3º SGT", "3º SGT ARTUR", "CARREIRA", "", "4ª SEÇÃO", "3º SGT COUTO", "", "2025", "15/10/2026", "13/11/2026", "14/11/2026"],
+            ["47", "3º SGT", "3º SGT BARRETO", "CARREIRA", "", "GARAGEM", "3º SGT ESPERANÇA", "", "2025", "16/10/2026", "25/10/2026", "26/10/2026"],
+            ["46", "3º SGT", "3º SGT PEDRO CARVALHO", "CARREIRA", "", "PEL C2", "", "", "2025", "20/10/2026", "29/10/2026", "30/10/2026"],
+            ["10", "S TEN", "S TEN CARLOS GOMES", "CARREIRA", "", "COMUNICAÇÃO SOCIAL", "3º SGT RIELLA", "", "2025", "16/11/2026", "15/12/2026", "16/12/2026"],
+            ["9", "2º TEN", "2º TEN LADISLAU", "CARREIRA", "", "PEL C2", "", "", "2025", "18/11/2026", "27/11/2026", "28/11/2026"],
+            ["27", "3º SGT", "3º SGT LARA", "CARREIRA", "", "2ª SEÇÃO", "1º SOUZA", "", "2025", "19/11/2026", "18/12/2026", "19/12/2026"],
+            ["45", "3º SGT", "3º SGT DANIEL FERREIRA", "CARREIRA", "", "PEL C2", "", "", "2025", "23/11/2026", "02/12/2026", "03/12/2026"],
+            ["20", "2º SGT", "2º SGT RAFAEL VIEIRA", "CARREIRA", "", "PEL C2", "", "", "2025", "14/12/2026", "23/12/2026", "24/12/2026"],
+            ["31", "3º SGT", "3º SGT LEONAM", "CARREIRA", "", "TRANSFERIDO", "", "", "2025", "14/12/2026", "12/01/2027", "13/01/2027"],
+            ["33", "3º SGT", "3º SGT DIONÍSIO", "CARREIRA", "", "PEL C2", "", "", "2025", "14/12/2026", "12/01/2027", "13/01/2027"],
+            ["41", "3º SGT", "3º SGT HAKME", "CARREIRA", "", "PEL C2", "", "", "2025", "14/12/2026", "12/01/2027", "13/01/2027"],
+            ["19", "2º SGT", "2º SGT VINICIUS LIMA", "CARREIRA", "", "INFORMÁTICA", "3º SGT SARAGOSSA", "", "2025", "21/12/2026", "04/01/2027", "05/01/2027"],
+            ["4", "1º TEN", "1º TEN DOS SANTOS", "CARREIRA", "", "4ª SEÇÃO", "-", "", "2025", "28/12/2026", "26/01/2027", "27/01/2027"],
+            ["22", "2º SGT", "2º SGT ERIVELTON", "CARREIRA", "", "SALC/11ª BDA INF MEC", "S TEN ARRUDA", "", "2025", "29/12/2026", "27/01/2027", "28/01/2027"],
+            ["29", "3º SGT", "3º SGT NASCIMENTO", "CARREIRA", "", "1ª SEÇÃO", "1º SGT SALVADOR/3º SGT VERAS", "", "2025", "29/12/2026", "12/01/2027", "13/01/2027"],
+            ["38", "3º SGT", "3º SGT GARUZI", "CARREIRA", "", "PEL C2", "", "", "2025", "11/01/2027", "25/01/2027", "26/01/2027"]
+        ];
+
+        let dadosFiltrados = [...dados];
+        let sortColumn = -1;
+        let sortAscending = true;
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('tabelaBody');
+            const noResults = document.getElementById('noResults');
+            
+            tbody.innerHTML = '';
+            
+            if (dadosFiltrados.length === 0) {
+                noResults.style.display = 'block';
+                tbody.closest('table').style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                tbody.closest('table').style.display = 'table';
+                
+                dadosFiltrados.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row[0]}</td>
+                        <td><strong>${row[1]}</strong></td>
+                        <td><strong>${row[2]}</strong></td>
+                        <td><span class="badge ${row[3] === 'CARREIRA' ? 'badge-carreira' : 'badge-temporario'}">${row[3]}</span></td>
+                        <td>${row[4]}</td>
+                        <td>${row[5]}</td>
+                        <td>${row[6]}</td>
+                        <td>${row[7] ? '<span class="badge badge-habilitacao">' + row[7] + '</span>' : ''}</td>
+                        <td><strong>${row[8]}</strong></td>
+                        <td>${row[9]}</td>
+                        <td>${row[10]}</td>
+                        <td>${row[11]}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+            
+            atualizarEstatisticas();
+        }
+
+        function atualizarEstatisticas() {
+            const totalCarreira = dados.filter(row => row[3] === 'CARREIRA').length;
+            const totalTemporario = dados.filter(row => row[3] === 'TEMPORÁRIO').length;
+            
+            document.getElementById('totalRegistros').textContent = dados.length;
+            document.getElementById('totalCarreira').textContent = totalCarreira;
+            document.getElementById('totalTemporario').textContent = totalTemporario;
+            document.getElementById('totalVisiveis').textContent = dadosFiltrados.length;
+        }
+
+        function aplicarFiltros() {
+            const filterNome = document.getElementById('filterNome').value.toUpperCase();
+            const filterPromo = document.getElementById('filterPromo').value.toUpperCase();
+            const filterCarreira = document.getElementById('filterCarreira').value;
+            const filterSecao = document.getElementById('filterSecao').value.toUpperCase();
+            const filterPeriodo = document.getElementById('filterPeriodo').value;
+            const filterMes = document.getElementById('filterMes').value;
+
+            dadosFiltrados = dados.filter(row => {
+                const matchNome = !filterNome || row[2].toUpperCase().includes(filterNome);
+                const matchPromo = !filterPromo || (row[0].includes(filterPromo) || row[1].toUpperCase().includes(filterPromo));
+                const matchCarreira = !filterCarreira || row[3] === filterCarreira;
+                const matchSecao = !filterSecao || row[5].toUpperCase().includes(filterSecao);
+                const matchPeriodo = !filterPeriodo || row[8] === filterPeriodo;
+                const matchMes = !filterMes || row[9].substring(3, 5) === filterMes;
+
+                return matchNome && matchPromo && matchCarreira && matchSecao && matchPeriodo && matchMes;
+            });
+
+            renderizarTabela();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterNome').value = '';
+            document.getElementById('filterPromo').value = '';
+            document.getElementById('filterCarreira').value = '';
+            document.getElementById('filterSecao').value = '';
+            document.getElementById('filterPeriodo').value = '';
+            document.getElementById('filterMes').value = '';
+            dadosFiltrados = [...dados];
+            renderizarTabela();
+        }
+
+        function sortTable(columnIndex) {
+            if (sortColumn === columnIndex) {
+                sortAscending = !sortAscending;
+            } else {
+                sortColumn = columnIndex;
+                sortAscending = true;
+            }
+
+            dadosFiltrados.sort((a, b) => {
+                let valA = a[columnIndex];
+                let valB = b[columnIndex];
+
+                // Tentar converter para número se possível
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+                
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return sortAscending ? numA - numB : numB - numA;
+                }
+
+                // Ordenação de strings
+                valA = valA.toString().toUpperCase();
+                valB = valB.toString().toUpperCase();
+                
+                if (valA < valB) return sortAscending ? -1 : 1;
+                if (valA > valB) return sortAscending ? 1 : -1;
+                return 0;
+            });
+
+            // Atualizar indicadores de ordenação
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+            });
+            
+            const header = document.querySelector(`th[data-column="${columnIndex}"]`);
+            if (header) {
+                header.classList.add(sortAscending ? 'sorted-asc' : 'sorted-desc');
+            }
+
+            renderizarTabela();
+        }
+
+        // Event listeners
+        document.getElementById('filterNome').addEventListener('input', aplicarFiltros);
+        document.getElementById('filterPromo').addEventListener('input', aplicarFiltros);
+        document.getElementById('filterCarreira').addEventListener('change', aplicarFiltros);
+        document.getElementById('filterSecao').addEventListener('input', aplicarFiltros);
+        document.getElementById('filterPeriodo').addEventListener('change', aplicarFiltros);
+        document.getElementById('filterMes').addEventListener('change', aplicarFiltros);
+
+        // Adicionar eventos de clique nas colunas sortable
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', function() {
+                const columnIndex = parseInt(this.getAttribute('data-column'));
+                sortTable(columnIndex);
+            });
+        });
+
+        // Inicializar
+        renderizarTabela();
+    </script>
+</body>
+</html>
