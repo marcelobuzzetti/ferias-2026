@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h2><i class="bi bi-pencil-square"></i> {{ titulo }}</h2>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">PROMO/NR</label>
+            {{ form.promo_nr }}
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">P/G *</label>
+            {{ form.posto_graduacao }}
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Nome de Guerra *</label>
+            {{ form.nome_guerra }}
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Tipo de Carreira *</label>
+            {{ form.tipo_carreira }}
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Seção *</label>
+            {{ form.secao }}
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Substituto</label>
+            {{ form.substituto }}
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Habilitação</label>
+            {{ form.habilitacao }}
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Período Aquisitivo *</label>
+            {{ form.periodo_aquisitivo }}
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Data de Início *</label>
+            {{ form.data_inicio }}
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Data de Término *</label>
+            {{ form.data_termino }}
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Data de Apresentação *</label>
+            {{ form.data_apresentacao }}
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <button type="submit" class="btn btn-success">
+            <i class="bi bi-save"></i> Salvar
+        </button>
+        <a href="{% url 'listar_ferias' %}" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+    </div>
+</form>
+{% endblock %}

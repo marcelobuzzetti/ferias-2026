@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Férias{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-list-ul"></i> Lista de Férias</h2>
+    <a href="{% url 'criar_ferias' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Cadastrar Férias
+    </a>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ total_registros }}</h3>
+                <p class="mb-0">Total de Registros</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ total_carreira }}</h3>
+                <p class="mb-0">Carreira</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ total_temporario }}</h3>
+                <p class="mb-0">Temporários</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="nome" class="form-control" placeholder="Nome" value="{{ request.GET.nome }}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="secao" class="form-control" placeholder="Seção" value="{{ request.GET.secao }}">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="periodo" class="form-control" placeholder="Período" value="{{ request.GET.periodo }}">
+            </div>
+            <div class="col-md-2">
+                <select name="tipo_carreira" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="CARREIRA" {% if request.GET.tipo_carreira == 'CARREIRA' %}selected{% endif %}>Carreira</option>
+                    <option value="TEMPORÁRIO" {% if request.GET.tipo_carreira == 'TEMPORÁRIO' %}selected{% endif %}>Temporário</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>P/G</th>
+                <th>Nome</th>
+                <th>Carreira</th>
+                <th>Seção</th>
+                <th>Período</th>
+                <th>Início</th>
+                <th>Término</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in ferias %}
+            <tr>
+                <td><strong>{{ f.posto_graduacao }}</strong></td>
+                <td>{{ f.nome_guerra }}</td>
+                <td>
+                    <span class="badge {% if f.tipo_carreira == 'CARREIRA' %}bg-success{% else %}bg-warning{% endif %}">
+                        {{ f.tipo_carreira }}
+                    </span>
+                </td>
+                <td>{{ f.secao }}</td>
+                <td>{{ f.periodo_aquisitivo }}</td>
+                <td>{{ f.data_inicio|date:"d/m/Y" }}</td>
+                <td>{{ f.data_termino|date:"d/m/Y" }}</td>
+                <td>
+                    <a href="{% url 'visualizar_ferias' f.pk %}" class="btn btn-sm btn-info" title="Visualizar">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'editar_ferias' f.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'deletar_ferias' f.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center">Nenhum registro encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

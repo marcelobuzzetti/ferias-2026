@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Visualizar Férias{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-eye"></i> Detalhes das Férias</h2>
+    <div>
+        <a href="{% url 'editar_ferias' ferias.pk %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="{% url 'listar_ferias' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <strong>PROMO/NR:</strong> {{ ferias.promo_nr|default:"-" }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <strong>P/G:</strong> {{ ferias.posto_graduacao }}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <strong>Nome de Guerra:</strong> {{ ferias.nome_guerra }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <strong>Carreira:</strong>
+                <span class="badge {% if ferias.tipo_carreira == 'CARREIRA' %}bg-success{% else %}bg-warning{% endif %}">
+                    {{ ferias.tipo_carreira }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <strong>Seção:</strong> {{ ferias.secao }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <strong>Substituto:</strong> {{ ferias.substituto|default:"-" }}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <strong>Habilitação:</strong> {{ ferias.habilitacao|default:"-" }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <strong>Período Aquisitivo:</strong> {{ ferias.periodo_aquisitivo }}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <strong>Data de Início:</strong> {{ ferias.data_inicio|date:"d/m/Y" }}
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Data de Término:</strong> {{ ferias.data_termino|date:"d/m/Y" }}
+            </div>
+            <div class="col-md-4 mb-3">
+                <strong>Data de Apresentação:</strong> {{ ferias.data_apresentacao|date:"d/m/Y" }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: ferias_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: ferias_db
+      MYSQL_ROOT_PASSWORD: ferias_root_password
+      MYSQL_USER: ferias_user
+      MYSQL_PASSWORD: ferias_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  web:
+    build: .
+    container_name: ferias_django
+    restart: always
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=ferias_db
+      - DB_USER=ferias_user
+      - DB_PASSWORD=ferias_password
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  static_volume:
